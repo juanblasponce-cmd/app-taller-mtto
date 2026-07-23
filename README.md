@@ -47,20 +47,19 @@ Sirve todo en **http://localhost:3001**.
 | Usuario | Rol | Qué puede hacer |
 |---|---|---|
 | Juan Blas Ponce | Administrador | Todo: usuarios, áreas, catálogos |
-| Carlos Ramírez | Solicitante | Crear avisos |
-| Lucía Fernández | Gestor Enlace SAP | Registrar SAP, crear OT, gestionar materiales |
-| Miguel Torres / Ana Díaz | Supervisor | Validar avisos, asignar, planificar, validar y firmar cierres |
-| Jorge Núñez | Planificador | Backlog, estimaciones, planificación y programación |
+| Carlos Ramírez | Supervisor | Crear avisos |
+| Lucía Fernández | Gestor Enlace SAP | Registrar SAP, crear y editar OT, validar avisos, asignar, gestionar materiales |
+| Jorge Núñez | Planificador | Backlog, estimaciones, planificación y programación; valida y firma los cierres |
 | Pedro Gómez / Rosa Vega / Luis Mendoza | Técnico | Ejecutar OT, materiales, tiempos, solicitar cierre |
 
 ## Flujo principal (probado de punta a punta)
 
-1. **Solicitante** crea un aviso → *Pendiente de validación*.
-2. **Supervisor** lo valida (aprobar / observar / rechazar). Al aprobar pasa a bandeja SAP.
-3. **Gestor Enlace SAP** registra el aviso en SAP y crea la OT (proceso manual, sección 9).
-4. **Supervisor** asigna técnico y programa; **Técnico** cambia estados, pide materiales y registra tiempos.
+1. **Supervisor** crea un aviso → *Pendiente de validación*.
+2. **Gestor Enlace SAP** lo valida (aprobar / observar / rechazar). Al aprobar pasa a bandeja SAP.
+3. **Gestor Enlace SAP** registra el aviso en SAP, crea la OT (proceso manual, sección 9) y asigna al técnico.
+4. **Técnico** cambia estados, pide materiales y registra tiempos.
 5. **Técnico** solicita cierre (parcial o total) — *no puede concluir la OT por sí mismo*.
-6. **Gestor SAP** registra horas y cierre en SAP; **Supervisor** valida, **firma** y se concluye.
+6. **Gestor SAP** registra horas y cierre en SAP; **Planificador** valida, **firma** y se concluye.
 7. Se genera el **PDF** (inicial / ejecución / final) y la OT pasa al **historial**.
 
 El **backlog** acompaña todo el ciclo: consolida avisos (aún sin OT) y OT no concluidas

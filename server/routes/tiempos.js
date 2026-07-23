@@ -19,7 +19,7 @@ function calcDuracion(inicio, fin) {
 }
 
 // Registrar tiempo (técnico)
-router.post('/', requireRole(ROLES.TECNICO, ROLES.SUPERVISOR), (req, res, next) => {
+router.post('/', requireRole(ROLES.TECNICO), (req, res, next) => {
   const b = req.body;
   if (!b.orden_id) return next(new ApiError(400, 'Falta la OT.'));
   const duracion = b.duracion_horas ?? calcDuracion(b.hora_inicio, b.hora_fin);

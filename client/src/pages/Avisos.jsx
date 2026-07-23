@@ -5,7 +5,7 @@ import { useAuth } from '../lib/auth.jsx';
 import { useCatalogos } from '../lib/catalogos.jsx';
 import { PrioridadBadge, EstadoBadge, Spinner, Empty, Modal, Field, useToast, hace } from '../components/ui.jsx';
 
-const PUEDE_CREAR = ['solicitante', 'supervisor', 'planificador', 'administrador'];
+const PUEDE_CREAR = ['supervisor', 'administrador'];
 
 export default function Avisos() {
   const [params, setParams] = useSearchParams();

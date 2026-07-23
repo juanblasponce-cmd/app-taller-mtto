@@ -21,9 +21,12 @@ export default function OrdenDetalle() {
 
   const done = (msg) => { toast(msg); setModal(null); cargar(); };
   const rol = user.rol;
-  const esTecnico = rol === 'tecnico' || rol === 'administrador';
-  const esSuper = ['supervisor', 'planificador', 'administrador'].includes(rol);
-  const esGestor = ['gestor_sap', 'administrador'].includes(rol);
+  const esAdmin = rol === 'administrador';
+  const esTecnico = rol === 'tecnico' || esAdmin;
+  // Gestor Enlace SAP: crea y edita la OT, asigna técnicos y gestiona materiales.
+  const esGestor = rol === 'gestor_sap' || esAdmin;
+  // Planificador: estimaciones, planificación/programación, validación y firma del cierre.
+  const esPlanificador = rol === 'planificador' || esAdmin;
   const activa = !o.estado_final;
   const pct = o.horas_estimadas ? Math.min(100, Math.round((o.horas_ejecutadas / o.horas_estimadas) * 100)) : 0;
 
@@ -129,16 +132,17 @@ export default function OrdenDetalle() {
           <div className="card card-pad">
             <h3 className="section-title">Acciones</h3>
             <div className="btn-row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
-              {esSuper && <button className="btn btn-primary" onClick={() => setModal('asignar')}>👷 Asignar / reprogramar</button>}
-              {esSuper && <button className="btn" onClick={() => setModal('planif')}>🗓️ Planificación</button>}
+              {esGestor && <button className="btn btn-primary" onClick={() => setModal('asignar')}>👷 Asignar / reprogramar</button>}
+              {esGestor && activa && <button className="btn" onClick={() => setModal('editar')}>✏️ Editar OT</button>}
+              {esPlanificador && <button className="btn" onClick={() => setModal('planif')}>🗓️ Planificación</button>}
               {esTecnico && activa && <button className="btn" onClick={() => setModal('estado')}>🔄 Cambiar estado</button>}
               {esTecnico && activa && !['cierre_parcial_solicitado', 'cierre_total_solicitado'].includes(o.estado) &&
                 <button className="btn btn-warn" onClick={() => setModal('cierre')}>🏁 Solicitar cierre</button>}
               {esGestor && o.estado === 'cierre_total_solicitado' &&
                 <button className="btn btn-warn" onClick={() => api.post(`/cierre/${o.id}/sap`).then(() => done('Cierre registrado en SAP.')).catch((e) => toast(e.message, 'err'))}>🗂️ Registrar cierre en SAP</button>}
-              {esSuper && ['cierre_parcial_solicitado', 'cierre_total_solicitado', 'cerrada_sap_pendiente_conclusion'].includes(o.estado) &&
+              {esPlanificador && ['cierre_parcial_solicitado', 'cierre_total_solicitado', 'cerrada_sap_pendiente_conclusion'].includes(o.estado) &&
                 <button className="btn btn-success" onClick={() => setModal('firmar')}>✍️ Validar y firmar</button>}
-              {esSuper && o.estado === 'concluida' &&
+              {esPlanificador && o.estado === 'concluida' &&
                 <button className="btn btn-danger" onClick={() => { const c = prompt('Motivo de reapertura:'); if (c) api.post(`/ordenes/${o.id}/reabrir`, { comentario: c }).then(() => done('OT reabierta.')).catch((e) => toast(e.message, 'err')); }}>↩️ Reabrir OT</button>}
             </div>
             <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: '14px 0' }} />
@@ -177,6 +181,7 @@ export default function OrdenDetalle() {
       </div>
 
       {modal === 'asignar' && <AsignarModal o={o} onClose={() => setModal(null)} onDone={() => done('Asignación guardada.')} />}
+      {modal === 'editar' && <EditarOtModal o={o} onClose={() => setModal(null)} onDone={() => done('OT actualizada.')} />}
       {modal === 'planif' && <PlanifModal o={o} onClose={() => setModal(null)} onDone={() => done('Planificación actualizada.')} />}
       {modal === 'estado' && <EstadoModal o={o} onClose={() => setModal(null)} onDone={() => done('Estado actualizado.')} />}
       {modal === 'material' && <MaterialModal o={o} onClose={() => setModal(null)} onDone={() => done('Solicitud creada.')} />}
@@ -223,6 +228,53 @@ function AsignarModal({ o, onClose, onDone }) {
         <Field label="Fecha programada"><input type="date" value={f.fecha_programada} onChange={(e) => setF((p) => ({ ...p, fecha_programada: e.target.value }))} /></Field>
         <Field label="Fecha comprometida"><input type="date" value={f.fecha_comprometida} onChange={(e) => setF((p) => ({ ...p, fecha_comprometida: e.target.value }))} /></Field>
       </div>
+    </Modal>
+  );
+}
+
+// Edición de la OT por el Gestor Enlace SAP (números SAP, tipo, prioridad, fechas…)
+function EditarOtModal({ o, onClose, onDone }) {
+  const { list } = useCatalogos();
+  const toast = useToast();
+  const [areas, setAreas] = useState([]);
+  const [f, setF] = useState({
+    ot_sap: o.ot_sap || '', aviso_sap: o.aviso_sap || '', tipo_mantenimiento: o.tipo_mantenimiento || '',
+    tipo_falla: o.tipo_falla || '', prioridad: o.prioridad || '', area_id: o.area_id || '',
+    ubicacion: o.ubicacion || '', fecha_requerida: '', observaciones: o.observaciones || '',
+  });
+  const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
+  useEffect(() => { api.get('/areas').then(setAreas).catch(() => {}); }, []);
+  const guardar = async () => {
+    try { await api.put('/ordenes/' + o.id, { ...f, area_id: Number(f.area_id) || null }); onDone(); }
+    catch (e) { toast(e.message, 'err'); }
+  };
+  return (
+    <Modal title="Editar Orden de Trabajo" onClose={onClose} size="lg"
+      footer={<><button className="btn" onClick={onClose}>Cancelar</button><button className="btn btn-primary" onClick={guardar}>Guardar</button></>}>
+      <div className="form-grid">
+        <Field label="Número de OT SAP"><input value={f.ot_sap} onChange={(e) => set('ot_sap', e.target.value)} /></Field>
+        <Field label="Número de aviso SAP"><input value={f.aviso_sap} onChange={(e) => set('aviso_sap', e.target.value)} /></Field>
+        <Field label="Tipo de mantenimiento">
+          <select value={f.tipo_mantenimiento} onChange={(e) => set('tipo_mantenimiento', e.target.value)}>
+            {list('tipo_mantenimiento').map((c) => <option key={c.codigo} value={c.codigo}>{c.etiqueta}</option>)}
+          </select>
+        </Field>
+        <Field label="Prioridad">
+          <select value={f.prioridad} onChange={(e) => set('prioridad', e.target.value)}>
+            {list('prioridad').map((c) => <option key={c.codigo} value={c.codigo}>{c.etiqueta}</option>)}
+          </select>
+        </Field>
+        <Field label="Área">
+          <select value={f.area_id} onChange={(e) => set('area_id', e.target.value)}>
+            <option value="">Sin área</option>
+            {areas.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+          </select>
+        </Field>
+        <Field label="Ubicación"><input value={f.ubicacion} onChange={(e) => set('ubicacion', e.target.value)} /></Field>
+        <Field label="Tipo de falla"><input value={f.tipo_falla} onChange={(e) => set('tipo_falla', e.target.value)} /></Field>
+        <Field label="Fecha requerida"><input type="date" value={f.fecha_requerida} onChange={(e) => set('fecha_requerida', e.target.value)} /></Field>
+      </div>
+      <Field label="Observaciones"><textarea value={f.observaciones} onChange={(e) => set('observaciones', e.target.value)} /></Field>
     </Modal>
   );
 }

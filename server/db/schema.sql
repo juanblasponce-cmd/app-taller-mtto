@@ -253,12 +253,13 @@ CREATE TABLE IF NOT EXISTS cierre (
 );
 
 -- ---------------------------------------------------------------------
--- FIRMAS del supervisor (sección 18)
+-- FIRMAS de validación del cierre (sección 18).
+-- Quien valida y firma es el Planificador; supervisor_id guarda su id.
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS firma (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   orden_id      INTEGER NOT NULL REFERENCES orden(id) ON DELETE CASCADE,
-  supervisor_id INTEGER REFERENCES usuario(id),
+  supervisor_id INTEGER REFERENCES usuario(id),  -- usuario que valida y firma
   nombre        TEXT,
   correo        TEXT,
   cargo         TEXT,

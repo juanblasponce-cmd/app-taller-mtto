@@ -21,8 +21,9 @@ export default function AvisoDetalle() {
   if (!a) return <Spinner />;
 
   const accion = async (fn, msg) => { try { await fn(); toast(msg); setModal(null); cargar(); } catch (e) { toast(e.message, 'err'); } };
-  const esValidador = ['supervisor', 'planificador', 'administrador'].includes(user.rol);
+  // El Gestor Enlace SAP valida los avisos, los registra en SAP y crea la OT.
   const esGestor = ['gestor_sap', 'administrador'].includes(user.rol);
+  const esValidador = esGestor;
   const esDueno = a.solicitante_id === user.id || user.rol === 'administrador';
 
   return (

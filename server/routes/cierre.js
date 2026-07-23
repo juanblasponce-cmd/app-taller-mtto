@@ -1,6 +1,6 @@
 // =====================================================================
 //  Cierre parcial/total (16, 17), registro SAP de horas y
-//  validación + firma del supervisor (18).
+//  validación + firma del Planificador (18).
 // =====================================================================
 import { Router } from 'express';
 import { all, get, run, tx } from '../db/index.js';
@@ -10,7 +10,7 @@ import { registrarHistorial, auditar, ApiError, nextCodigo } from '../lib/helper
 const router = Router();
 
 // --- El técnico solicita cierre (parcial o total) ---
-router.post('/solicitar', requireRole(ROLES.TECNICO, ROLES.SUPERVISOR), (req, res, next) => {
+router.post('/solicitar', requireRole(ROLES.TECNICO), (req, res, next) => {
   const b = req.body;
   const o = get('SELECT * FROM orden WHERE id=?', Number(b.orden_id));
   if (!o) return next(new ApiError(404, 'OT no encontrada.'));
@@ -68,8 +68,8 @@ router.post('/:ordenId/sap', requireRole(ROLES.GESTOR_SAP), (req, res, next) => 
   res.json({ ok: true });
 });
 
-// --- Supervisor valida y firma (sección 18) → concluye la OT / confirma parcial ---
-router.post('/:ordenId/firmar', requireRole(ROLES.SUPERVISOR), (req, res, next) => {
+// --- El Planificador valida y firma (sección 18) → concluye la OT / confirma parcial ---
+router.post('/:ordenId/firmar', requireRole(ROLES.PLANIFICADOR), (req, res, next) => {
   const ordenId = Number(req.params.ordenId);
   const b = req.body;
   const o = get('SELECT * FROM orden WHERE id=?', ordenId);
@@ -111,8 +111,8 @@ router.post('/:ordenId/firmar', requireRole(ROLES.SUPERVISOR), (req, res, next) 
   res.json({ ok: true, estado: esParcial ? 'cierre_parcial' : 'concluida', codigo_documento: codigoDoc });
 });
 
-// --- OT pendientes de firma (para el supervisor) ---
-router.get('/pendientes-firma', requireRole(ROLES.SUPERVISOR, ROLES.PLANIFICADOR), (req, res) => {
+// --- OT pendientes de firma (para el Planificador) ---
+router.get('/pendientes-firma', requireRole(ROLES.PLANIFICADOR), (req, res) => {
   res.json(all(
     `SELECT o.id, o.codigo, o.estado, e.descripcion AS equipo, ar.nombre AS area
      FROM orden o LEFT JOIN equipo e ON e.id=o.equipo_id LEFT JOIN area ar ON ar.id=o.area_id

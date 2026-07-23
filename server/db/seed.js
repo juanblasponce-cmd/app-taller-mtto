@@ -157,14 +157,12 @@ areas.forEach((nombre) => {
 // ---------------------------------------------------------------------
 const usuarios = [
   ['Juan Blas Ponce', 'juan.blas.ponce@gmail.com', 'administrador', 'Administrador del sistema', null, null],
-  ['Carlos Ramírez', 'carlos.ramirez@taller.local', 'solicitante', 'Operador de planta', null, null],
+  ['Carlos Ramírez', 'carlos.ramirez@taller.local', 'supervisor', 'Supervisor de mantenimiento', null, null],
   ['Lucía Fernández', 'lucia.fernandez@taller.local', 'gestor_sap', 'Gestor Enlace SAP', null, null],
-  ['Miguel Torres', 'miguel.torres@taller.local', 'supervisor', 'Supervisor de mantenimiento', 'Maquinaria Agrícola', null],
-  ['Ana Díaz', 'ana.diaz@taller.local', 'supervisor', 'Supervisor de mantenimiento', 'Soldadura', null],
+  ['Jorge Núñez', 'jorge.nunez@taller.local', 'planificador', 'Planificador de mantenimiento', null, null],
   ['Pedro Gómez', 'pedro.gomez@taller.local', 'tecnico', 'Técnico mecánico', 'Maquinaria Agrícola', 'Mecánica'],
   ['Rosa Vega', 'rosa.vega@taller.local', 'tecnico', 'Técnico soldador', 'Soldadura', 'Soldadura'],
   ['Luis Mendoza', 'luis.mendoza@taller.local', 'tecnico', 'Técnico electricista', 'Electricidad', 'Eléctrica'],
-  ['Jorge Núñez', 'jorge.nunez@taller.local', 'planificador', 'Planificador de mantenimiento', null, null],
 ];
 const userId = {};
 usuarios.forEach(([nombre, correo, rol, cargo, area, esp]) => {
@@ -177,9 +175,9 @@ usuarios.forEach(([nombre, correo, rol, cargo, area, esp]) => {
   userId[correo] = Number(r.lastInsertRowid);
 });
 
-// Asignar supervisores a áreas
-run('UPDATE area SET supervisor_id = ? WHERE nombre = ?', userId['miguel.torres@taller.local'], 'Maquinaria Agrícola');
-run('UPDATE area SET supervisor_id = ? WHERE nombre = ?', userId['ana.diaz@taller.local'], 'Soldadura');
+// Asignar el supervisor a las áreas
+run('UPDATE area SET supervisor_id = ? WHERE nombre IN (?, ?)',
+  userId['carlos.ramirez@taller.local'], 'Maquinaria Agrícola', 'Soldadura');
 
 // ---------------------------------------------------------------------
 //  EQUIPOS (sección 21)
@@ -302,7 +300,7 @@ crearOT({
   area_id: areaId['Maquinaria Agrícola'], ubicacion: 'Patio A', tecnico_responsable_id: tecPedro,
   tipo_mantenimiento: 'correctivo', prioridad: 'alta', criticidad: 'alta', estado: 'en_ejecucion',
   estado_planificacion: 'en_ejecucion', horas_estimadas: 6, tecnicos_requeridos: 1, especialidad: 'mecanica',
-  antiguedad: '-12 days', actualizado: '-3 hours', created_by: userId['miguel.torres@taller.local'],
+  antiguedad: '-12 days', actualizado: '-3 hours', created_by: userId['lucia.fernandez@taller.local'],
 });
 
 const avOT2 = crearAviso({
@@ -317,7 +315,7 @@ const ot2 = crearOT({
   tipo_mantenimiento: 'correctivo', prioridad: 'media', criticidad: 'media', estado: 'esperando_materiales',
   estado_planificacion: 'pendiente_materiales', horas_estimadas: 4, tecnicos_requeridos: 1, especialidad: 'soldadura',
   motivo_bloqueo: 'sin_stock', antiguedad: '-7 days', actualizado: '-1 days',
-  created_by: userId['ana.diaz@taller.local'],
+  created_by: userId['lucia.fernandez@taller.local'],
 });
 // Solicitud de material para OT2
 run(
@@ -347,7 +345,7 @@ crearOT({
   area_id: areaId['Maquinaria Agrícola'], ubicacion: 'Galpón 2', tipo_mantenimiento: 'correctivo',
   prioridad: 'alta', criticidad: 'critica', estado: 'pendiente_asignacion',
   estado_planificacion: 'listo_planificar', horas_estimadas: 8, tecnicos_requeridos: 2, especialidad: 'electrica',
-  antiguedad: '-5 days', actualizado: '-5 days', created_by: userId['miguel.torres@taller.local'],
+  antiguedad: '-5 days', actualizado: '-5 days', created_by: userId['lucia.fernandez@taller.local'],
 });
 run('UPDATE aviso SET estado = ? WHERE id = ?', 'ot_creada', avParaOT.id);
 
@@ -365,7 +363,7 @@ const otConcl = crearOT({
   estado_planificacion: 'en_ejecucion', horas_estimadas: 3, tecnicos_requeridos: 1, especialidad: 'mecanica',
   trabajo_realizado: 'Se reemplazaron filtros de aceite, aire y combustible. Equipo operativo.',
   condicion_final: 'Operativo', antiguedad: '-30 days', actualizado: '-25 days',
-  created_by: userId['miguel.torres@taller.local'],
+  created_by: userId['lucia.fernandez@taller.local'],
 });
 run("UPDATE orden SET fecha_conclusion = datetime('now','-25 days'), fecha_cierre_sap = datetime('now','-26 days') WHERE id = ?", otConcl.id);
 // Tiempos de la OT concluida

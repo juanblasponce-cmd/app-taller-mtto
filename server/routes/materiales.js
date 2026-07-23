@@ -40,7 +40,7 @@ router.get('/:id', (req, res, next) => {
 });
 
 // Crear solicitud (técnico — sección 13.1: sin validar código/stock inicialmente)
-router.post('/', requireRole(ROLES.TECNICO, ROLES.SUPERVISOR), (req, res, next) => {
+router.post('/', requireRole(ROLES.TECNICO), (req, res, next) => {
   const b = req.body;
   if (!b.orden_id || !b.descripcion_libre) return next(new ApiError(400, 'Faltan OT y descripción.'));
   const codigo = nextCodigo('MT', 'material_solicitud');

@@ -52,8 +52,8 @@ router.get('/:id', (req, res, next) => {
   res.json(av);
 });
 
-// --- Crear aviso (solicitante) ---
-router.post('/', requireRole(ROLES.SOLICITANTE, ROLES.SUPERVISOR, ROLES.PLANIFICADOR), (req, res) => {
+// --- Crear aviso (Supervisor) ---
+router.post('/', requireRole(ROLES.SUPERVISOR), (req, res) => {
   const b = req.body;
   const codigo = nextCodigo('AV', 'aviso');
   const estado = b.enviar ? 'pendiente_validacion' : 'borrador';
@@ -116,8 +116,8 @@ router.post('/:id/enviar', (req, res, next) => {
   res.json({ ok: true });
 });
 
-// --- Validación (sección 8): aprobar / rechazar / observar ---
-router.post('/:id/validar', requireRole(ROLES.SUPERVISOR, ROLES.PLANIFICADOR), (req, res, next) => {
+// --- Validación (sección 8): aprobar / rechazar / observar — Gestor Enlace SAP ---
+router.post('/:id/validar', requireRole(ROLES.GESTOR_SAP), (req, res, next) => {
   const id = Number(req.params.id);
   const { accion, comentario, prioridad, area_id, tipo_aviso, equipo_id } = req.body;
   const av = get('SELECT * FROM aviso WHERE id = ?', id);

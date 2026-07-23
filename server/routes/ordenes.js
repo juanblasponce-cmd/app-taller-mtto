@@ -88,7 +88,7 @@ router.get('/:id', (req, res, next) => {
 });
 
 // --- Crear OT desde un aviso (Gestor Enlace SAP — sección 9/10) ---
-router.post('/', requireRole(ROLES.GESTOR_SAP, ROLES.SUPERVISOR), (req, res, next) => {
+router.post('/', requireRole(ROLES.GESTOR_SAP), (req, res, next) => {
   const b = req.body;
   if (!b.aviso_id) return next(new ApiError(400, 'Falta el aviso de origen.'));
   const av = get('SELECT * FROM aviso WHERE id = ?', Number(b.aviso_id));
@@ -125,8 +125,37 @@ router.post('/', requireRole(ROLES.GESTOR_SAP, ROLES.SUPERVISOR), (req, res, nex
   res.status(201).json(result);
 });
 
-// --- Asignar técnico responsable y participantes (Supervisor — sección 5.4) ---
-router.post('/:id/asignar', requireRole(ROLES.SUPERVISOR, ROLES.PLANIFICADOR), (req, res, next) => {
+// --- Editar datos de la OT (Gestor Enlace SAP) ---
+router.put('/:id', requireRole(ROLES.GESTOR_SAP), (req, res, next) => {
+  const id = Number(req.params.id);
+  const b = req.body;
+  const o = get('SELECT * FROM orden WHERE id = ?', id);
+  if (!o) return next(new ApiError(404, 'OT no encontrada.'));
+  // Una OT concluida requiere reapertura autorizada para modificarse (regla crítica 38)
+  if (o.estado === 'concluida') {
+    return next(new ApiError(409, 'La OT está concluida: requiere reapertura autorizada para modificarse.'));
+  }
+  // Los números SAP no deben duplicarse (sección 38)
+  if (b.ot_sap && b.ot_sap !== o.ot_sap && get('SELECT id FROM orden WHERE ot_sap = ? AND id <> ?', b.ot_sap, id)) {
+    return next(new ApiError(409, 'Ese número de OT SAP ya existe en otra orden.'));
+  }
+  run(
+    `UPDATE orden SET ot_sap=COALESCE(?,ot_sap), aviso_sap=COALESCE(?,aviso_sap),
+        tipo_mantenimiento=COALESCE(?,tipo_mantenimiento), tipo_falla=COALESCE(?,tipo_falla),
+        prioridad=COALESCE(?,prioridad), area_id=COALESCE(?,area_id), ubicacion=COALESCE(?,ubicacion),
+        fecha_requerida=COALESCE(?,fecha_requerida), observaciones=COALESCE(?,observaciones),
+        updated_by=?, updated_at=datetime('now')
+     WHERE id=?`,
+    b.ot_sap ?? null, b.aviso_sap ?? null, b.tipo_mantenimiento ?? null, b.tipo_falla ?? null,
+    b.prioridad ?? null, b.area_id ?? null, b.ubicacion ?? null, b.fecha_requerida ?? null,
+    b.observaciones ?? null, req.user.id, id,
+  );
+  auditar(req.user.id, 'orden.editar', 'orden', id, b);
+  res.json({ ok: true });
+});
+
+// --- Asignar técnico responsable y participantes (Gestor Enlace SAP) ---
+router.post('/:id/asignar', requireRole(ROLES.GESTOR_SAP), (req, res, next) => {
   const id = Number(req.params.id);
   const { tecnico_responsable_id, participantes, fecha_programada, fecha_comprometida } = req.body;
   const o = get('SELECT * FROM orden WHERE id = ?', id);
@@ -176,8 +205,8 @@ router.post('/:id/estado', (req, res, next) => {
   res.json({ ok: true, estado });
 });
 
-// --- Estado / datos de planificación (sección 27) ---
-router.post('/:id/planificacion', requireRole(ROLES.PLANIFICADOR, ROLES.SUPERVISOR), (req, res, next) => {
+// --- Estado / datos de planificación (Planificador — sección 27) ---
+router.post('/:id/planificacion', requireRole(ROLES.PLANIFICADOR), (req, res, next) => {
   const id = Number(req.params.id);
   const b = req.body;
   const o = get('SELECT * FROM orden WHERE id = ?', id);
@@ -196,8 +225,8 @@ router.post('/:id/planificacion', requireRole(ROLES.PLANIFICADOR, ROLES.SUPERVIS
   res.json({ ok: true });
 });
 
-// --- Reabrir OT concluida (requiere autorización — regla crítica 38) ---
-router.post('/:id/reabrir', requireRole(ROLES.SUPERVISOR), (req, res, next) => {
+// --- Reabrir OT concluida (Planificador, quien valida y firma — regla crítica 38) ---
+router.post('/:id/reabrir', requireRole(ROLES.PLANIFICADOR), (req, res, next) => {
   const id = Number(req.params.id);
   const { comentario } = req.body;
   const o = get('SELECT * FROM orden WHERE id = ?', id);
