@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "concurrently -n API,WEB -c blue,magenta \"npm:dev:server\" \"npm:dev:client\"",
-    "dev:server": "nodemon --exec \"node --experimental-sqlite --no-warnings server/index.js\"",
+    "dev:server": "cross-env API_PORT=3001 nodemon --exec \"node --experimental-sqlite --no-warnings server/index.js\"",
     "dev:client": "vite",
     "build": "vite build",
     "start": "cross-env NODE_ENV=production node --experimental-sqlite --no-warnings server/index.js",

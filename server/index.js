@@ -29,7 +29,9 @@ import alertasRoutes from './routes/alertas.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
-const PORT = process.env.PORT || 3001;
+// Puerto del API. Se usa API_PORT en lugar de PORT porque algunos lanzadores
+// definen PORT con el puerto del frontend, lo que haría chocar ambos servidores.
+const PORT = process.env.API_PORT || process.env.PORT || 3001;
 const PROD = process.env.NODE_ENV === 'production';
 
 applySchema();
