@@ -1,1 +1,22 @@
+# Dependencias
+node_modules/
+
+# Build del frontend
+client/dist/
+
+# Base de datos y archivos subidos (datos locales)
+data/*.db
+data/*.db-*
+uploads/
+
+# Entorno / configuración local
+.env
 .claude/settings.local.json
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema
+.DS_Store
+Thumbs.db
